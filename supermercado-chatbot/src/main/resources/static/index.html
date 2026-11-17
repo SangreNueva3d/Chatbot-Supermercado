@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SuperBot – Pedidos a domicilio</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #f2f4f7; margin: 0; }
+        .app { max-width: 720px; margin: 0 auto; height: 100vh; display: flex; flex-direction: column; }
+        header { background: #1b8a3a; color: #fff; padding: 14px 18px; font-size: 18px; font-weight: 600; }
+        #chat { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+        .msg { max-width: 80%; padding: 10px 14px; border-radius: 14px; white-space: pre-wrap; line-height: 1.4; }
+        .bot { background: #fff; align-self: flex-start; border: 1px solid #e1e4e8; }
+        .user { background: #1b8a3a; color: #fff; align-self: flex-end; }
+        form { display: flex; gap: 8px; padding: 12px; background: #fff; border-top: 1px solid #e1e4e8; }
+        input { flex: 1; padding: 12px; border: 1px solid #ccd; border-radius: 10px; font-size: 15px; }
+        button { padding: 0 20px; border: 0; border-radius: 10px; background: #1b8a3a; color: #fff; font-size: 15px; cursor: pointer; }
+        button:disabled { opacity: .5; }
+    </style>
+</head>
+<body>
+<div class="app">
+    <header>SuperBot · Supermercado a domicilio</header>
+    <div id="chat"></div>
+    <form id="form">
+        <input id="texto" placeholder="Escribe tu mensaje..." autocomplete="off" required>
+        <button id="enviar">Enviar</button>
+    </form>
+</div>
+<script>
+    const userId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now());
+    const chat = document.getElementById('chat');
+    const form = document.getElementById('form');
+    const texto = document.getElementById('texto');
+    const boton = document.getElementById('enviar');
+
+    function agregar(clase, contenido) {
+        const d = document.createElement('div');
+        d.className = 'msg ' + clase;
+        d.textContent = contenido;
+        chat.appendChild(d);
+        chat.scrollTop = chat.scrollHeight;
+        return d;
+    }
+
+    agregar('bot', '¡Hola! Soy SuperBot. Puedo ayudarte a hacer tu pedido a domicilio. ¿Me das tu número de teléfono para empezar?');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const mensaje = texto.value.trim();
+        if (!mensaje) return;
+        agregar('user', mensaje);
+        texto.value = '';
+        boton.disabled = true;
+        const espera = agregar('bot', 'Escribiendo...');
+        try {
+            const r = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, mensaje })
+            });
+            const data = await r.json();
+            espera.textContent = data.respuesta;
+        } catch (err) {
+            espera.textContent = 'No pude conectar con el servidor: ' + err.message;
+        }
+        boton.disabled = false;
+        texto.focus();
+    });
+</script>
+</body>
+</html>
